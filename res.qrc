@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/icon">
+        <file>color.ico</file>
+        <file>open.ico</file>
+        <file>reload.ico</file>
+    </qresource>
+</RCC>
