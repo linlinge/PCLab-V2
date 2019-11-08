@@ -30,22 +30,22 @@ SOURCES += \
         pcviewer.cpp \
     denoisingmodule.cpp \
     global.cpp \
-    pmt_statistical.cpp \
     src/OutlierRemoval.cpp \
-    about.cpp
+    about.cpp \
+    gui_outlier_removal.cpp
 
 HEADERS += \
         pcviewer.h \
     denoisingmodule.h \
     global.h \
-    pmt_statistical.h \
     src/OutlierRemoval.h \
-    about.h
+    about.h \
+    gui_outlier_removal.h
 
 FORMS += \
         pcviewer.ui \
-    pmt_statistical.ui \
-    about.ui
+    about.ui \
+    gui_outlier_removal.ui
 
 # eigen3
 INCLUDEPATH += /usr/include/eigen3

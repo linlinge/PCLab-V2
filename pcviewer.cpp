@@ -26,29 +26,20 @@ PCViewer::PCViewer(QWidget *parent) :
 
     QString str=config->value("config/filename").toString();
 
+    // progress bar
+    progress_bar_->setValue(0);
 
-    // Setup the cloud pointer
-    cloud_.reset (new pcl::PointCloud<pcl::PointXYZRGBA>);
-    // The number of points in the cloud
-    pcl::io::loadPLYFile<pcl::PointXYZRGBA>("/home/henry/datasets/fused.ply", *cloud_);
-
-    progress_bar_->setValue(20);
     // Set up the QVTK window
     viewer_.reset (new pcl::visualization::PCLVisualizer ("viewer", false));
     viewer_->setBackgroundColor (0.1, 0.1, 0.1);
     ui->widget->SetRenderWindow (viewer_->getRenderWindow ());
     viewer_->setupInteractor (ui->widget->GetInteractor (), ui->widget->GetRenderWindow ());
 
-    // load file
-    //设置点云颜色，该处为单一颜色设置
-    progress_bar_->setValue(30);
+    //
+    cloud_=NULL;
 
-    pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZRGBA> single_color(cloud_, 255, 255, 255);
-    viewer_->addPointCloud (cloud_,single_color, "cloud");
-    ui->widget->update();
-    progress_bar_->setValue(100);
 
-    ui->actionStatistical_Removal->setToolTip("Statistical Removal");
+    //
 
 }
 
@@ -71,10 +62,9 @@ void PCViewer::on_actionColor_changed()
 
 void PCViewer::colorCloudDistances (int color_mode)
 {
-
     if(color_mode==0)
     {
-        pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZRGBA> single_color(cloud_, 255, 255, 255);
+        pcl::visualization::PointCloudColorHandlerCustom<PointType> single_color(cloud_, 255, 255, 255);
         viewer_->addPointCloud (cloud_,single_color, "cloud");
         ui->widget->update ();
         return;
@@ -85,7 +75,7 @@ void PCViewer::colorCloudDistances (int color_mode)
   max = cloud_->points[0].x;
 
   // Search for the minimum/maximum
-  for (pcl::PointCloud<pcl::PointXYZRGBA>::iterator cloud_it = cloud_->begin (); cloud_it != cloud_->end (); ++cloud_it)
+  for (pcl::PointCloud<PointType>::iterator cloud_it = cloud_->begin (); cloud_it != cloud_->end (); ++cloud_it)
   {
         if (min > cloud_it->x)
           min = cloud_it->x;
@@ -103,7 +93,7 @@ void PCViewer::colorCloudDistances (int color_mode)
 
 
 
-  for (pcl::PointCloud<pcl::PointXYZRGBA>::iterator cloud_it = cloud_->begin (); cloud_it != cloud_->end (); ++cloud_it)
+  for (pcl::PointCloud<PointType>::iterator cloud_it = cloud_->begin (); cloud_it != cloud_->end (); ++cloud_it)
   {
     if(color_mode==1)
     {
@@ -131,12 +121,13 @@ void PCViewer::on_actionOpen_triggered()
 
 void PCViewer::LoadFile()
 {
+    cloud_=pcl::PointCloud<PointType>::Ptr(new pcl::PointCloud<PointType>);
     // You might want to change "/home/" if you're not on an *nix platform
     QString filename = QFileDialog::getOpenFileName (this, tr ("Open point cloud"), "/home/", tr ("Point cloud data (*.pcd *.ply)"));
     progress_bar_->setValue(10);
 
     PCL_INFO("File chosen: %s\n", filename.toStdString ().c_str ());
-    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_tmp (new pcl::PointCloud<pcl::PointXYZRGBA>);
+    pcl::PointCloud<PointType>::Ptr cloud_tmp (new pcl::PointCloud<PointType>);
 
     if (filename.isEmpty ())
       return;
@@ -144,8 +135,13 @@ void PCViewer::LoadFile()
     int return_status;
     if (filename.endsWith (".pcd", Qt::CaseInsensitive))
       return_status = pcl::io::loadPCDFile (filename.toStdString (), *cloud_tmp);
-    else
+    else if(filename.endsWith (".ply", Qt::CaseInsensitive))
       return_status = pcl::io::loadPLYFile (filename.toStdString (), *cloud_tmp);
+    else{
+        QMessageBox::warning(this,"Error","Load File Format Error!");
+        return;
+    }
+
 
     progress_bar_->setValue(20);
 
@@ -167,12 +163,12 @@ void PCViewer::LoadFile()
     }
 
     colorCloudDistances (1);
+    viewer_->addPointCloud (cloud_, "cloud");
     viewer_->updatePointCloud (cloud_, "cloud");
     viewer_->resetCamera ();
-    ui->widget->update ();
+    ui->widget->update();
     progress_bar_->setValue(100);
 }
-
 
 void PCViewer::on_actionReload_triggered()
 {
@@ -181,9 +177,9 @@ void PCViewer::on_actionReload_triggered()
 
 void PCViewer::on_actionStatistical_Removal_triggered()
 {
-    pStatistical=new pmt_statistical(this);
-    pStatistical->setWindowTitle("Statistical Outlier Removal");
-    pStatistical->show();
+    gOutlierRemoval.setWindowTitle("Outlier Removal");
+    gOutlierRemoval.show();
+    connect(&gOutlierRemoval,SIGNAL(SendStatisticalParameter(int,float)),this,SLOT(remove_outlier(int,float)));
 }
 
 void PCViewer::on_actionAbout_triggered()
@@ -191,4 +187,27 @@ void PCViewer::on_actionAbout_triggered()
     pAbout=new About(this);
     pAbout->setWindowTitle("About PCLab");
     pAbout->show();
+}
+
+void PCViewer::remove_outlier(int k, float nSigma)
+{
+    if(cloud_!=NULL){
+        OutlierRemoval sor;
+        sor.StatisticOutlierRemoval(cloud_,k,nSigma);
+
+        qDebug("%d",sor.cloud_filtered_->points.size());
+        updateViewer(sor.cloud_filtered_);
+    }
+    else{
+         QMessageBox::warning(this,"Warning","No cloud Available");
+    }
+}
+
+void PCViewer::updateViewer(pcl::PointCloud<PointType>::Ptr cloud)
+{
+
+    viewer_->addPointCloud (cloud, "cloud");
+    viewer_->updatePointCloud (cloud, "cloud");
+    //viewer_->resetCamera ();
+    ui->widget->update();
 }

@@ -1,16 +1,17 @@
 #include "OutlierRemoval.h"
-void OutlierRemoval::StatisticOutlierRemoval(pcl::PointCloud<PointType>::Ptr cloud, int k, float threshould)
+void OutlierRemoval::StatisticOutlierRemoval(pcl::PointCloud<PointType>::Ptr cloud, int k, float multi)
 {
-    pcl::PointCloud<PointType>::Ptr cloud_filtered (new pcl::PointCloud<PointType>);
-    pcl::PointCloud<PointType>::Ptr cloud_outlier (new pcl::PointCloud<PointType>);
+    // new cloud
+    cloud_filtered_=pcl::PointCloud<PointType>::Ptr(new pcl::PointCloud<PointType>);
+    cloud_outlier_=pcl::PointCloud<PointType>::Ptr(new pcl::PointCloud<PointType>);
 
     // Create the filtering object
     pcl::StatisticalOutlierRemoval<PointType> sor;
     sor.setInputCloud (cloud);
-    sor.setMeanK (30);
-    sor.setStddevMulThresh (10.0);
-    sor.filter(*cloud_filtered);
-
+    sor.setMeanK (k);
+    sor.setStddevMulThresh (multi);
+    sor.filter(*cloud_filtered_);
     sor.setNegative (true);
-    sor.filter(*cloud_outlier);
+    sor.filter(*cloud_outlier_);
+    qDebug("%d",cloud->points.size());
 }

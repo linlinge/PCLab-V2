@@ -19,8 +19,12 @@
 #include <QString>
 #include <QSettings>
 
+#ifndef PointType
+#define PointType pcl::PointXYZRGB
+#endif
 
 // Variables
 extern QSettings* config;
 
+enum MethodsType{Outlier_Statistical,Outlier_Radius};
 #endif // GLOBAL_H

@@ -10,11 +10,15 @@
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/filters/statistical_outlier_removal.h>
 #include <omp.h>
+#include <qdebug.h>
+
 #ifndef PointType
 #define PointType pcl::PointXYZRGB
 #endif
 using namespace std;
 class OutlierRemoval{
 public:
-    void StatisticOutlierRemoval(pcl::PointCloud<PointType>::Ptr cloud,int k, float threshould);
+    pcl::PointCloud<PointType>::Ptr cloud_filtered_;
+    pcl::PointCloud<PointType>::Ptr cloud_outlier_;
+    void StatisticOutlierRemoval(pcl::PointCloud<PointType>::Ptr cloud,int k=4, float multi=2.0f);
 };
